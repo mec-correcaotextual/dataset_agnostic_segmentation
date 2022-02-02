@@ -171,13 +171,13 @@ class TensorBoardFiles(object):
     def __init__(self, experiment_dir, prefix, sess):
         import tensorflow as tf
         if prefix:
-            summary_writer = tf.summary.FileWriter(
+            summary_writer = tf.compat.v1.summary.FileWriter(
                 str(get_or_create_path(path_string=experiment_dir / self.LOGS / ('%s_%s' % (prefix, dense_time_stamp())))), sess.graph)
-            fake_summary_writer = tf.summary.FileWriter(
+            fake_summary_writer = tf.compat.v1.summary.FileWriter(
                 str(get_or_create_path(path_string=experiment_dir / self.LOGS / ('fake_%s_%s' % (prefix, dense_time_stamp())))), sess.graph)
         else:
-            summary_writer = tf.summary.FileWriter(str(get_or_create_path(path_string=experiment_dir / 'logs' / dense_time_stamp())), sess.graph)
-            fake_summary_writer = tf.summary.FileWriter(
+            summary_writer = tf.compat.v1.summary.FileWriter(str(get_or_create_path(path_string=experiment_dir / 'logs' / dense_time_stamp())), sess.graph)
+            fake_summary_writer = tf.compat.v1.summary.FileWriter(
                 str(get_or_create_path(path_string=experiment_dir / self.LOGS / ('fake_%s' % dense_time_stamp()))), sess.graph)
 
         self.real = summary_writer

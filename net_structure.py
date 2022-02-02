@@ -208,8 +208,8 @@ class NetworkStructure(object):
 
         self.update_ops = update_ops = get_update_ops()
 
-        L2_regularization = tf.add_n(tf.losses.get_regularization_losses(), name='l2_reg') \
-            if tf.losses.get_regularization_losses() else tf.constant(0., name='l2_reg')
+        L2_regularization = tf.compat.v1.add_n(tf.compat.v1.losses.get_regularization_losses(), name='l2_reg') \
+            if tf.compat.v1.losses.get_regularization_losses() else tf.compat.v1.constant(0., name='l2_reg')
         keep_my_loss(L2_regularization)
 
         # We can train parts of the network by setting train_vars to not None values (see command line help for
@@ -257,10 +257,10 @@ class NetworkStructure(object):
                     box_var_list += iou_estimator.vars()
             else:
                 box_var_list = regression.vars() + iou_estimator.vars()
-            L2_boxes_regularization = tf.add_n(
-                tf.losses.get_regularization_losses('.*%s|%s.*$' % (regression.scope, iou_estimator.scope)),
+            L2_boxes_regularization = tf.compat.v1.add_n(
+                tf.compat.v1.losses.get_regularization_losses('.*%s|%s.*$' % (regression.scope, iou_estimator.scope)),
                 name='l2_box_reg')
-            L_boxes = tf.add_n([L_reg, P.iou_predictions_loss_weight * L_iou, L2_boxes_regularization],
+            L_boxes = tf.compat.v1.add_n([L_reg, P.iou_predictions_loss_weight * L_iou, L2_boxes_regularization],
                                name='reg_iou_loss')
 
             # Make train-op for regression training
