@@ -28,7 +28,7 @@ def random_boxes_ops(gt_boxes, scope, num_classes, default_image_size, boxes_per
         random_boxes_shape = (batch_size * sum(boxes_per_class), 6)
 
         if gt_phocs is not None:
-            rois_and_labels, phocs = tf.py_func(func, [gt_boxes, gt_phocs], [tf.float32, tf.float32])
+            rois_and_labels, phocs = tf.compat.v1.py_func(func, [gt_boxes, gt_phocs], [tf.float32, tf.float32])
             # Adding 1 (at the beginning) to represent batch
             phocs.set_shape((batch_size * sum(boxes_per_class), phoc_dim))
             phocs = tf.identity(phocs, name='rnd_phoc_assignment')

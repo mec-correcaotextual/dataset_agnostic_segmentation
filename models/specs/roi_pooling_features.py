@@ -180,7 +180,7 @@ class IoUPrediction(TFNetwork):
             * after nms keep boxes with score above certain threshold
         """
         with tf.name_scope(self.scope):
-            pred_iou_prob = tf.nn.softmax(logits, dim=-1, name='pred_iou_prob')
+            pred_iou_prob = tf.compat.v1.nn.softmax(logits, dim=-1, name='pred_iou_prob')
             good_boxes_idx = tf_nms_filter(pool_boxes[:, 1:], pred_iou_prob,
                                            nms_overlap_thresh=self.args.nms_overlap_thresh,
                                            L=self.args.num_of_classes_to_sum,
