@@ -4,7 +4,7 @@ from __future__ import print_function
 
 import json
 from pathlib2 import Path
-import cPickle as pklRick
+import pickle as pklRick
 
 import numpy as np
 from numba import jit

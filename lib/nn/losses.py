@@ -23,7 +23,6 @@ def weighted_l1(predictions, images):
     return loss
 
 
-
 def weighted_xent_with_reshape(predictions, raw_labels, w_pos, w_neg, with_border=False):
     with tf.name_scope('weighted_xent_with_reshape'):
         raw_labels = tf.reshape(raw_labels, [-1])

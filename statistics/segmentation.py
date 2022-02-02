@@ -3,7 +3,7 @@ import numpy as np
 
 from lib.bbox import bbox_overlaps
 
-from utils import get_coverage_mapping, save_stat_page
+from .utils import get_coverage_mapping, save_stat_page
 from lib.show_images import debugShowBoxes
 
 

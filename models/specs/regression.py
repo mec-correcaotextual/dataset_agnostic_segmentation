@@ -4,7 +4,7 @@ from __future__ import print_function
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.contrib import slim
+import tf_slim as slim
 
 from lib.nn.losses import smooth_l1, weighted_loss_with_reshape
 from models.specs import get_vars, TFNetwork

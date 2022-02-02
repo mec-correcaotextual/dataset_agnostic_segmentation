@@ -113,8 +113,8 @@ class Logger(object):
 
     def __call__(self, print_string, show=True):
         sys.stdout = self._log_file
-        log_string = '%s  %s' % (_log_time_stamp(), str(print_string))
-        print (log_string)
+        log_string = ('%s  %s' % (_log_time_stamp(), str(print_string))).encode()
+        #print (log_string)
         self._log_file.flush()
         sys.stdout = self._orig_output
         self._lines_written += 1

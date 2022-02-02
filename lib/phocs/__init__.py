@@ -1,9 +1,9 @@
 from string import ascii_lowercase
 
-from phoc import build_phoc
+from .phoc import build_phoc
 from lib.helpers import clean_word
 
-letters_and_digits_unigrams = map(str, [c for c in ascii_lowercase] + range(10))
+letters_and_digits_unigrams = map(str, [c for c in ascii_lowercase] + list(range(10)))
 
 
 def phoc_letters_and_digits(word_list, unigram_levels_list=None):

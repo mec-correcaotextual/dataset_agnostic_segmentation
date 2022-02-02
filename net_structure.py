@@ -21,6 +21,7 @@ from settings import get_train_op
 
 reduction = tf.reduce_mean
 
+
 def get_word_embedding_model(name):
     """ Helper to select a word embedding model from command line argument"""
     assert hasattr(word_embeddings, name), '%s does not exists' % name
@@ -62,25 +63,30 @@ class NetworkStructure(object):
         heatmap = HeatMap(output_size=out_cls, scope='hmap', args=P, exp_dir=experiment_dir)
         models.add_model(heatmap)
         hmap_logits = heatmap.heatmap(features)
-        hmap = tf.nn.sigmoid(hmap_logits, name='probability_map') if not P.hmap_border else tf.nn.softmax(hmap_logits, dim=-1, name='probability_map')
+        hmap = tf.nn.sigmoid(hmap_logits, name='probability_map') if not P.hmap_border else tf.nn.softmax(hmap_logits,
+                                                                                                          dim=-1,
+                                                                                                          name='probability_map')
         if P.hmap_border:
             L_hmap = heatmap_loss_xent(y=inputs.gt_heatmap, y_hat=hmap_logits, weight_pos=P.heatmap_pos_cls_weight,
-                                    weight_neg=P.heatmap_neg_cls_weight, with_border=P.hmap_border)
+                                       weight_neg=P.heatmap_neg_cls_weight, with_border=P.hmap_border)
         else:
             hmap_logits_for_loss = hmap_logits
-            L_hmap = heatmap_loss_sigmoid(y=inputs.gt_heatmap, y_hat=hmap_logits_for_loss, weight_pos=P.heatmap_pos_cls_weight,
-                                  weight_neg=P.heatmap_neg_cls_weight, reduction=reduction)
+            L_hmap = heatmap_loss_sigmoid(y=inputs.gt_heatmap, y_hat=hmap_logits_for_loss,
+                                          weight_pos=P.heatmap_pos_cls_weight,
+                                          weight_neg=P.heatmap_neg_cls_weight, reduction=reduction)
         keep_my_loss(L_hmap)
 
         # (2a) Heatmap Smoothing U-NET
         if P.unet_size > 0:
-            hmap_smoother = UnetSmoother(out_size=out_cls, size=P.unet_size, down_layers=P.unet_depth, scope='hmap_smoother', args=P, exp_dir=experiment_dir)
+            hmap_smoother = UnetSmoother(out_size=out_cls, size=P.unet_size, down_layers=P.unet_depth,
+                                         scope='hmap_smoother', args=P, exp_dir=experiment_dir)
             models.add_model(hmap_smoother)
             smoother_input = hmap if not P.unet_with_img else tf.concat([hmap, input_img], axis=-1, name='unet_input')
             smooth_logits = hmap_smoother.unet(smoother_input)
             if P.hmap_border:
                 self.smooth_hmap = smooth_hmap = tf.nn.softmax(smooth_logits, dim=-1, name='smoother_prob_map')
-                L_smooth = heatmap_loss_xent(y=inputs.gt_heatmap, y_hat=smooth_logits, weight_pos=1., weight_neg=1., with_border=P.hmap_border)
+                L_smooth = heatmap_loss_xent(y=inputs.gt_heatmap, y_hat=smooth_logits, weight_pos=1., weight_neg=1.,
+                                             with_border=P.hmap_border)
             else:
                 # NOTE: In case of binary heatmap we use L1 reconstruction loss
                 self.smooth_hmap = smooth_hmap = tf.nn.sigmoid(smooth_logits, name='smoother_prob_map')
@@ -104,7 +110,8 @@ class NetworkStructure(object):
             pool_boxes = regression.filter_boxes_on_size(batched_boxes)
 
             L_reg = reg_loss(y=inputs.gt_deltas, y_hat=pred_shifts, inside_box_flags=inputs.point_labels,
-                             scope=regression.scope, weight_pos=P.box_reg_pos_cls_weight, weight_neg=P.box_reg_neg_cls_weight,
+                             scope=regression.scope, weight_pos=P.box_reg_pos_cls_weight,
+                             weight_neg=P.box_reg_neg_cls_weight,
                              batch_size=P.batch_size)
             keep_my_loss(L_reg)
 
@@ -125,7 +132,8 @@ class NetworkStructure(object):
 
             # Use GT loss in segmentation based scenario - segmentation free uses random training (see below)
             if not segmentation_free:
-                L_phoc = phoc_loss_func(y=inputs.gt_phocs[:, 1:], y_hat=phoc_logits, scope='phoc_loss', reduction=reduction)
+                L_phoc = phoc_loss_func(y=inputs.gt_phocs[:, 1:], y_hat=phoc_logits, scope='phoc_loss',
+                                        reduction=reduction)
                 keep_my_loss(L_phoc)
         else:
             L_phoc = tf.constant(0.0, name='no_phocs')
@@ -134,7 +142,9 @@ class NetworkStructure(object):
         if segmentation_free:
             iou_estimator = IoUPrediction(output_shape=(16, 64), args=P, exp_dir=experiment_dir, scope='iou')
             pooling_hmap = smooth_hmap if P.unet_size > 0 else hmap
-            pooled_features = iou_estimator.base_pooling(pooling_hmap, pool_boxes) if not P.hmap_ablation else iou_estimator.base_pooling(input_img, pool_boxes)
+            pooled_features = iou_estimator.base_pooling(pooling_hmap,
+                                                         pool_boxes) if not P.hmap_ablation else iou_estimator.base_pooling(
+                input_img, pool_boxes)
 
             models.add_model(iou_estimator)
             pred_iou_logits = iou_estimator.iou(pooled_features)
@@ -202,7 +212,8 @@ class NetworkStructure(object):
             if tf.losses.get_regularization_losses() else tf.constant(0., name='l2_reg')
         keep_my_loss(L2_regularization)
 
-        # We can train parts of the network by setting train_vars to not None values (see command line help for accepted format)
+        # We can train parts of the network by setting train_vars to not None values (see command line help for
+        # accepted format)
         if P.train_vars is not None and (P.train_hmap or P.unet_size < 1):
             var_list = []
             loss_list = [L2_regularization]
@@ -220,7 +231,7 @@ class NetworkStructure(object):
                 var_list += word_embed.vars()
                 loss_list += [P.phoc_loss_weight * L_phoc]
                 if P.aux_iou:
-                    loss_list += [P.iou_predictions_loss_weight*L_aux_iou]
+                    loss_list += [P.iou_predictions_loss_weight * L_aux_iou]
         else:
             var_list = feature_map.vars() + heatmap.vars() + hmap_smoother.vars()
             loss_list = [P.heatmap_total_loss_weight * L_hmap, P.heatmap_total_loss_weight * L_smooth,
@@ -232,8 +243,9 @@ class NetworkStructure(object):
 
         # Make train-op for hmap training
         if var_list:
-            self.train_hmap, self.gs_hmap = get_train_op(L_hmap_phoc, P.lr_hmap, P, P.iters, var_list, update_ops=update_ops, name='hmap_train',
-                                                         optimizer=tf.train.AdamOptimizer, beta1=0.5)
+            self.train_hmap, self.gs_hmap = get_train_op(L_hmap_phoc, P.lr_hmap, P, P.iters, var_list,
+                                                         update_ops=update_ops, name='hmap_train',
+                                                         optimizer=tf.compat.v1.train.AdamOptimizer, beta1=0.5)
             models.add_vars(self.gs_hmap)
 
         if segmentation_free:
@@ -245,13 +257,17 @@ class NetworkStructure(object):
                     box_var_list += iou_estimator.vars()
             else:
                 box_var_list = regression.vars() + iou_estimator.vars()
-            L2_boxes_regularization = tf.add_n(tf.losses.get_regularization_losses('.*%s|%s.*$' % (regression.scope, iou_estimator.scope)), name='l2_box_reg')
-            L_boxes = tf.add_n([L_reg, P.iou_predictions_loss_weight * L_iou, L2_boxes_regularization], name='reg_iou_loss')
+            L2_boxes_regularization = tf.add_n(
+                tf.losses.get_regularization_losses('.*%s|%s.*$' % (regression.scope, iou_estimator.scope)),
+                name='l2_box_reg')
+            L_boxes = tf.add_n([L_reg, P.iou_predictions_loss_weight * L_iou, L2_boxes_regularization],
+                               name='reg_iou_loss')
 
             # Make train-op for regression training
             if box_var_list:
-                self.train_boxes, self.gs_reg = get_train_op(L_boxes, P.lr_boxes, P, P.iters, box_var_list, update_ops=update_ops, name='boxes_train',
-                                                   optimizer=tf.train.AdamOptimizer, beta1=0.5)
+                self.train_boxes, self.gs_reg = get_train_op(L_boxes, P.lr_boxes, P, P.iters, box_var_list,
+                                                             update_ops=update_ops, name='boxes_train',
+                                                             optimizer=tf.compat.v1.train.AdamOptimizer, beta1=0.5)
                 models.add_vars(self.gs_reg)
             keep_my_loss(L_boxes)
 

@@ -7,7 +7,7 @@ from lib.phocs import phoc_letters_and_digits
 
 from lib.show_images import debugShowBoxes
 
-from utils import get_coverage_mapping, save_stat_page
+from .utils import get_coverage_mapping, save_stat_page
 
 
 def update_phoc_stats(meta_images, doc_images, gt_boxes, pred_boxes, pred_phocs, save_path):

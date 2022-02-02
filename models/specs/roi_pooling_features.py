@@ -3,7 +3,8 @@ from __future__ import division
 from __future__ import print_function
 
 import tensorflow as tf
-from tensorflow.contrib import slim
+import tf_slim as slim
+# from tensorflow.contrib import slim
 from models.specs import TFNetwork
 
 
@@ -18,7 +19,8 @@ def tf_nms_filter(pred_boxes, scores_vector, nms_overlap_thresh, K, L):
     """
     # get predicted boxes and their scores
     scores = tf.reduce_sum(scores_vector[:, -L:], axis=1)
-    idx = tf.image.non_max_suppression(pred_boxes, scores, iou_threshold=nms_overlap_thresh, max_output_size=K, name='good_boxes_idx')
+    idx = tf.image.non_max_suppression(pred_boxes, scores, iou_threshold=nms_overlap_thresh, max_output_size=K,
+                                       name='good_boxes_idx')
     return idx
 
 
@@ -29,6 +31,7 @@ def get_full_feature_maps(heatmap_features, regression_features, name):
 
 def iou_prediction(features, num_classes, scope, reuse=None, L2_reg=0.0, act_func=tf.nn.relu):
     """ Transform features to IoU prediction"""
+
     def _args_scope():
         with slim.arg_scope([slim.conv2d], activation_fn=act_func, weights_regularizer=slim.l2_regularizer(L2_reg)):
             with slim.arg_scope([slim.conv2d], padding='SAME') as arg_sc:
@@ -38,8 +41,10 @@ def iou_prediction(features, num_classes, scope, reuse=None, L2_reg=0.0, act_fun
         with tf.variable_scope(scope, scope, [features], reuse=reuse) as sc:
             end_points_collection = sc.name + '_end_points'
             # Collect outputs for conv2d, fully_connected and max_pool2d.
-            with slim.arg_scope([slim.conv2d, slim.fully_connected, slim.max_pool2d], outputs_collections=end_points_collection):
-                logits = slim.conv2d(features, num_classes, [1, 1], stride=1, activation_fn=None, scope='box_logit_conv')
+            with slim.arg_scope([slim.conv2d, slim.fully_connected, slim.max_pool2d],
+                                outputs_collections=end_points_collection):
+                logits = slim.conv2d(features, num_classes, [1, 1], stride=1, activation_fn=None,
+                                     scope='box_logit_conv')
                 logits = tf.squeeze(logits, axis=[1, 2], name='box_logit')
 
     return logits
@@ -144,7 +149,8 @@ class IoUPrediction(TFNetwork):
     def large_pooling(self, x, b):
         def large(x, boxes_input, batch_idx):
             pooled_features = tf.image.crop_and_resize(x, boxes_input, batch_idx, crop_size=self.output_shape)
-            net = slim.conv2d(pooled_features, 1024, self.output_shape, padding='VALID', stride=1, scope='conv1_box_cls')
+            net = slim.conv2d(pooled_features, 1024, self.output_shape, padding='VALID', stride=1,
+                              scope='conv1_box_cls')
             net = slim.conv2d(net, 1024, [1, 1], stride=1, scope='conv2_box_cls')
             net = slim.conv2d(net, 1024, [1, 1], stride=1, padding='VALID', scope='fc1_box_cls')
             net = slim.conv2d(net, 1024, [1, 1], stride=1, padding='VALID', scope='fc2_box_cls')
@@ -163,7 +169,8 @@ class IoUPrediction(TFNetwork):
     def iou(self, features):
         reuse = self.get_reuse(self._iou_calls)
         self._iou_calls += 1
-        iou_pred = iou_prediction(features, num_classes=self.args.box_filter_num_clsses, scope=self.scope, L2_reg=self.args.box_filter_L2_reg, reuse=reuse)
+        iou_pred = iou_prediction(features, num_classes=self.args.box_filter_num_clsses, scope=self.scope,
+                                  L2_reg=self.args.box_filter_L2_reg, reuse=reuse)
         return iou_pred
 
     def get_good_boxes(self, logits, pool_boxes):
@@ -174,7 +181,9 @@ class IoUPrediction(TFNetwork):
         """
         with tf.name_scope(self.scope):
             pred_iou_prob = tf.nn.softmax(logits, dim=-1, name='pred_iou_prob')
-            good_boxes_idx = tf_nms_filter(pool_boxes[:, 1:], pred_iou_prob, nms_overlap_thresh=self.args.nms_overlap_thresh, L=self.args.num_of_classes_to_sum,
+            good_boxes_idx = tf_nms_filter(pool_boxes[:, 1:], pred_iou_prob,
+                                           nms_overlap_thresh=self.args.nms_overlap_thresh,
+                                           L=self.args.num_of_classes_to_sum,
                                            K=self.max_boxes_to_filter)
             intermed_probs = tf.gather(pred_iou_prob, good_boxes_idx, name='intermed_probs')
             intermed_boxes = tf.gather(pool_boxes, good_boxes_idx, name='intermed_boxes')

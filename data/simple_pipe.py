@@ -2,7 +2,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from Queue import Queue
+from queue import Queue
 from pathlib2 import Path
 from threading import Thread
 from functools import partial

@@ -1,35 +1,39 @@
 from __future__ import print_function
 from pathlib2 import Path
 import tensorflow as tf
-from tensorflow.contrib.slim.python.slim.nets import resnet_v2
-
-from tensorflow.contrib import slim
+# from tensorflow.contrib.slim.python.slim.nets import resnet_v2
+from tf_slim.nets import resnet_v2
+import tf_slim as slim
 
 resnet_v2_block = resnet_v2.resnet_v2_block
 
 
 def get_vars(reg_ex=None):
-    v = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, reg_ex)
+    v = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.GLOBAL_VARIABLES, reg_ex)
     return v
 
+
 def get_update_ops(reg_ex=None):
-    v = tf.get_collection(tf.GraphKeys.UPDATE_OPS, reg_ex)
+    v = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS, reg_ex)
     return v
+
 
 def keep_my_loss(v):
     if isinstance(v, (tuple, list)):
         for _v in v:
-            tf.add_to_collection('my_losses', _v)
+            tf.compat.v1.add_to_collection('my_losses', _v)
     else:
-        tf.add_to_collection('my_losses', v)
+        tf.compat.v1.add_to_collection('my_losses', v)
 
 
 def my_losses(reg_ex=None):
-    return tf.get_collection('my_losses', reg_ex)
+    return tf.compat.v1.get_collection('my_losses', reg_ex)
 
 
-def resnet_from_blocks(inputs, blocks, num_classes=None, is_training=None, global_pool=False, output_stride=None, reuse=None, scope=None):
-    return resnet_v2.resnet_v2(inputs, blocks, num_classes, is_training, global_pool, output_stride, include_root_block=True, reuse=reuse, scope=scope)
+def resnet_from_blocks(inputs, blocks, num_classes=None, is_training=None, global_pool=False, output_stride=None,
+                       reuse=None, scope=None):
+    return resnet_v2.resnet_v2(inputs, blocks, num_classes, is_training, global_pool, output_stride,
+                               include_root_block=True, reuse=reuse, scope=scope)
 
 
 class ModelsSaveLoadManager(object):
@@ -70,7 +74,7 @@ class ModelsSaveLoadManager(object):
 
     def get_saver(self):
         if self._saver is None:
-            self._saver = tf.train.Saver(max_to_keep=2, var_list=self.vars())
+            self._saver = tf.compat.v1.train.Saver(max_to_keep=2, var_list=self.vars())
         return self._saver
 
     def _save(self, sess, global_step=None):
@@ -79,7 +83,8 @@ class ModelsSaveLoadManager(object):
             if global_step is not None:
                 return model_saver.save(sess, save_path=str(self.exp_dir / ('global_vars')), global_step=global_step,
                                         latest_filename='global_vars_ckpt')
-            return model_saver.save(sess, save_path=str(self.exp_dir / ('global_vars')),  latest_filename='global_vars_ckpt')
+            return model_saver.save(sess, save_path=str(self.exp_dir / ('global_vars')),
+                                    latest_filename='global_vars_ckpt')
 
     def _load(self, sess):
         if self._additional_vars:
@@ -106,15 +111,18 @@ class TFNetwork(object):
 
     def get_saver(self):
         if self._saver is None:
-            self._saver = tf.train.Saver(max_to_keep=2, var_list=self.vars(), name='%s_saver' % self.scope)#, ignore_missing_variables=True)
+            self._saver = tf.compat.v1.train.Saver(max_to_keep=2, var_list=self.vars(),
+                                                   name='%s_saver' % self.scope)  # , ignore_missing_variables=True)
         return self._saver
 
     def save(self, sess, global_step=None):
         model_saver = self.get_saver()
         if global_step is not None:
-            return model_saver.save(sess, save_path=str(self.exp_dir / ('%s_model' % self.scope)), global_step=global_step,
+            return model_saver.save(sess, save_path=str(self.exp_dir / ('%s_model' % self.scope)),
+                                    global_step=global_step,
                                     latest_filename='%s_ckpt' % self.scope)
-        return model_saver.save(sess, save_path=str(self.exp_dir / ('%s_model' % self.scope)), latest_filename='%s_ckpt' % self.scope)
+        return model_saver.save(sess, save_path=str(self.exp_dir / ('%s_model' % self.scope)),
+                                latest_filename='%s_ckpt' % self.scope)
 
     def load(self, sess):
         model_saver = self.get_saver()
@@ -123,7 +131,8 @@ class TFNetwork(object):
             print('[ %s ] No ckpt found...' % self.scope)
             return
         print('Loading %s' % str(ckpt))
-        init_op, init_feed = slim.assign_from_checkpoint(model_path=ckpt, var_list=self.vars(), ignore_missing_vars=True)
+        init_op, init_feed = slim.assign_from_checkpoint(model_path=ckpt, var_list=self.vars(),
+                                                         ignore_missing_vars=True)
         sess.run(init_op, init_feed)
         # model_saver.restore(sess, ckpt)
         return
@@ -132,7 +141,6 @@ class TFNetwork(object):
         if counter > 0:
             return True
         return None
-
 
 # class FeaturGANVarSaver(object):
 #     _fmap = '.*fmap/.*$'
@@ -208,16 +216,11 @@ class TFNetwork(object):
 #     def global_step(self):
 #         return self._vars(self._global_step)
 #
-#     def save(self, sess, stage, global_step, name=None, train_type=None):
-#         if not self._save_vars:
-#             self._save_vars = tf.global_variables()
-#         if self.saver is None:
-#             var_list = self._save_vars + self.global_step()
-#             self.saver = tf.train.Saver(max_to_keep=2, var_list=var_list)
-#         if train_type is None:
-#             self.saver.save(sess, save_path=str(self._path(stage, name=name) / 'model'), global_step=global_step)
-#         else:
-#             self.saver.save(sess, save_path=str(self._path(stage, name=name) / ('%s_model' % train_type)), global_step=global_step)
+# def save(self, sess, stage, global_step, name=None, train_type=None): if not self._save_vars: self._save_vars =
+# tf.global_variables() if self.saver is None: var_list = self._save_vars + self.global_step() self.saver =
+# tf.train.Saver(max_to_keep=2, var_list=var_list) if train_type is None: self.saver.save(sess, save_path=str(
+# self._path(stage, name=name) / 'model'), global_step=global_step) else: self.saver.save(sess, save_path=str(
+# self._path(stage, name=name) / ('%s_model' % train_type)), global_step=global_step)
 #
 #     def load(self, sess):
 #         for op, feed, path in self._op_and_feed:
@@ -226,25 +229,18 @@ class TFNetwork(object):
 #                 self.logger('%s: %s (%s)' % (x.name, str(x.shape.as_list()), path))
 #             sess.run(op, feed)
 #
-#     def vars_for(self, _from, global_step=True, name=None, load=True):
-#         options = {self.baseline: self._vars([self._fmap, self._hmap, self._regression, self._iou, self._iou_pool, self._phocs, self._phocs_pool]),
-#                    self.unsup_boxes: self._vars([self._fmap, self._hmap, self._smoother, self._regression, self._iou, self._iou_pool, self._phocs, self._phocs_pool]),
-#                    self.unsup_phoc: self._vars([self._fmap, self._hmap, self._regression, self._iou, self._iou_pool, self._phocs, self._phocs_pool, self._domain_orthogonality]),
-#                    self.pretrain: self._vars([self._fmap, self._hmap, self._phocs, self._phocs_pool, self._reconstruction]),
-#                    self.Dtrain: self._vars([self._fmap, self._discriminator]),
-#                    self.Gtrain: self._vars([self._fmap, self._discriminator]),
-#                    }
-#         # ckpt = self.checkpoint('%s_%s' % (self._exp_dir, _from))
-#         if load:
-#             ckpt = self.checkpoint(self._path(_from, name=name), abs_loc=name is not None)
-#             if ckpt is not None:
-#                 self.logger('Adding load Ops from %s' % str(ckpt))
-#                 var_list = options[_from] + self.global_step() if global_step else options[_from]
-#                 self.init_op_and_feed(ckpt, var_list)
-#             else:
-#                 self.logger('No checkpoint for %s initializing' % (str(self._path(_from, name=name))))
-#         added_vars = options[_from] + self.global_step() if global_step else options[_from]
-#         self._save_vars += added_vars
+# def vars_for(self, _from, global_step=True, name=None, load=True): options = {self.baseline: self._vars([
+# self._fmap, self._hmap, self._regression, self._iou, self._iou_pool, self._phocs, self._phocs_pool]),
+# self.unsup_boxes: self._vars([self._fmap, self._hmap, self._smoother, self._regression, self._iou, self._iou_pool,
+# self._phocs, self._phocs_pool]), self.unsup_phoc: self._vars([self._fmap, self._hmap, self._regression, self._iou,
+# self._iou_pool, self._phocs, self._phocs_pool, self._domain_orthogonality]), self.pretrain: self._vars([self._fmap,
+# self._hmap, self._phocs, self._phocs_pool, self._reconstruction]), self.Dtrain: self._vars([self._fmap,
+# self._discriminator]), self.Gtrain: self._vars([self._fmap, self._discriminator]), } # ckpt = self.checkpoint(
+# '%s_%s' % (self._exp_dir, _from)) if load: ckpt = self.checkpoint(self._path(_from, name=name), abs_loc=name is not
+# None) if ckpt is not None: self.logger('Adding load Ops from %s' % str(ckpt)) var_list = options[_from] +
+# self.global_step() if global_step else options[_from] self.init_op_and_feed(ckpt, var_list) else: self.logger('No
+# checkpoint for %s initializing' % (str(self._path(_from, name=name)))) added_vars = options[_from] +
+# self.global_step() if global_step else options[_from] self._save_vars += added_vars
 #
 #     def take_from(self, what, _from, global_step=True, name=None):
 #         if isinstance(what, (list, tuple)):
@@ -283,6 +279,3 @@ class TFNetwork(object):
 #             return v
 #         return get_vars(regex)
 #
-
-
-

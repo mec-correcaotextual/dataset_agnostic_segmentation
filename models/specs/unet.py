@@ -5,7 +5,7 @@ from __future__ import print_function
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.contrib.keras.api.keras.layers import Conv2D, Conv2DTranspose, MaxPooling2D, concatenate, \
+from tensorflow.keras.layers import Conv2D, Conv2DTranspose, MaxPooling2D, concatenate, \
     BatchNormalization, Dropout, LeakyReLU, ThresholdedReLU
 
 from models.specs import TFNetwork
@@ -16,7 +16,7 @@ def unet_encdoer(x, size, scope, down_layers=5, flat_layers=1, dropout=0.0, act_
     ep_collection = '%s_end_points' % scope
     _upconv = []
 
-    with tf.variable_scope(scope, scope, [x], reuse=reuse) as sc:
+    with tf.compat.v1.variable_scope(scope, scope, [x], reuse=reuse) as sc:
         net = x
         # Multiply chans and half spatial size
         for i in range(1, down_layers + 1):
@@ -36,7 +36,7 @@ def unet_encdoer(x, size, scope, down_layers=5, flat_layers=1, dropout=0.0, act_
 
 def unet_decoder(x, out_size, upconvs, scope, last_act_fn=None, act_fn='relu', dropout=0.0, batch_norm=True, reuse=None):
     ep_collection = '%s_end_points' % scope
-    with tf.variable_scope(scope, scope, [x], reuse=reuse) as sc:
+    with tf.compat.v1.variable_scope(scope, scope, [x], reuse=reuse) as sc:
         net = x
         last, rest = upconvs[::-1][-1], upconvs[::-1][:-1]
         for n, upconv in enumerate(rest):
@@ -46,27 +46,27 @@ def unet_decoder(x, out_size, upconvs, scope, last_act_fn=None, act_fn='relu', d
 
         net = decoder_block(net, last, size=out_size, scope='conv_last', dropout=0.0, batch_norm=False, reuse=reuse,
                                act_fn=act_fn, ep_collection=ep_collection)
-        tf.add_to_collection(ep_collection, net)
+        tf.compat.v1.add_to_collection(ep_collection, net)
         logits = Conv2D(out_size, (1, 1), activation=last_act_fn, padding='same')(net)
-        tf.add_to_collection(ep_collection, logits)
+        tf.compat.v1.add_to_collection(ep_collection, logits)
     return logits
 
 
 def encoder_block(x, scope, size, ksize=(3, 3), pool_size=(2, 2), act_fn=LeakyReLU, reuse=None, ep_collection='end_points',
                   pool=True, batch_norm=False, dropout=0.0):
-    with tf.variable_scope(scope, scope, [x], reuse=reuse) as sc:
+    with tf.compat.v1.variable_scope(scope, scope, [x], reuse=reuse) as sc:
         if batch_norm:
             x = BatchNormalization()(x, training=True)
-            tf.add_to_collection(ep_collection, x)
+            tf.compat.v1.add_to_collection(ep_collection, x)
         conv = Conv2D(size, ksize, activation=None, padding='same')(x)
         conv = act_fn(0.2)(conv)
-        tf.add_to_collection(ep_collection, conv)
+        tf.compat.v1.add_to_collection(ep_collection, conv)
         conv = Conv2D(size, ksize, activation=None, padding='same')(conv)
         conv = act_fn(0.2)(conv)
-        tf.add_to_collection(ep_collection, conv)
+        tf.compat.v1.add_to_collection(ep_collection, conv)
         if pool:
             pool = MaxPooling2D(pool_size=pool_size)(conv)
-            tf.add_to_collection(ep_collection, pool)
+            tf.compat.v1.add_to_collection(ep_collection, pool)
             return conv, pool
     return conv
 
@@ -76,26 +76,26 @@ def decoder_block(x, y, scope, size=None, upconv=True, ksize=(3, 3), upsize=(2, 
     if size is None:
         base_size = x.get_shape().as_list()[-1]
         size = int(base_size / 2)
-    with tf.variable_scope(scope, scope, [x], reuse=reuse) as sc:
+    with tf.compat.v1.variable_scope(scope, scope, [x], reuse=reuse) as sc:
         x = ThresholdedReLU(theta=0.0)(x)
         uped = Conv2DTranspose(size, upsize, strides=upstirdes, padding='same')(x) if upconv else x
 
         uped, y = reconcile_feature_size(uped, y)
         up = concatenate([uped, y], axis=3)
-        tf.add_to_collection(ep_collection, up)
+        tf.compat.v1.add_to_collection(ep_collection, up)
 
         conv = Conv2D(size, ksize, activation=act_fn, padding='same')(up)
-        tf.add_to_collection(ep_collection, conv)
+        tf.compat.v1.add_to_collection(ep_collection, conv)
 
         conv = Conv2D(size, ksize, activation=act_fn, padding='same')(conv)
-        tf.add_to_collection(ep_collection, conv)
+        tf.compat.v1.add_to_collection(ep_collection, conv)
 
         if batch_norm:
             conv = BatchNormalization()(conv, training=True)
-            tf.add_to_collection(ep_collection, conv)
+            tf.compat.v1.add_to_collection(ep_collection, conv)
         if dropout > 0.0:
             conv = Dropout(dropout)(conv)
-            tf.add_to_collection(ep_collection, conv)
+            tf.compat.v1.add_to_collection(ep_collection, conv)
     return conv
 
 

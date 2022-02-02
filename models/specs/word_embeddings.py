@@ -5,8 +5,8 @@ from __future__ import print_function
 from abc import ABCMeta, abstractmethod
 
 import tensorflow as tf
-from tensorflow.contrib import slim
-from tensorflow.contrib.keras.api.keras import backend as Kb
+import tf_slim as slim
+from tensorflow.keras import backend as Kb
 
 from models.specs import TFNetwork
 from models.specs.roi_pooling_features import iou_prediction
@@ -15,7 +15,7 @@ from models.specs.roi_pooling_features import iou_prediction
 def phoc_prediction(features, phoc_dim, scope, reuse=None, L2_reg=0.0, act_func=tf.nn.relu, large_topology=False, dropout=0.0):
 
     with slim.arg_scope(_args_scope(act_func, L2_reg)):
-        with tf.variable_scope(scope, scope, [features], reuse=reuse) as sc:
+        with tf.compat.v1.variable_scope(scope, scope, [features], reuse=reuse) as sc:
             end_points_collection = sc.name + '_end_points'
             # Collect outputs for conv2d, fully_connected and max_pool2d.
             with slim.arg_scope([slim.conv2d, slim.fully_connected, slim.max_pool2d], outputs_collections=end_points_collection):
@@ -45,7 +45,7 @@ def phoc_loss_func(y, y_hat, scope, reduction=tf.reduce_mean):
     :param iou_lables_thresh: (int) what IoU coverage classes should we take for PHOC training.
     :return: (scalar)
     """
-    with tf.variable_scope('%s/loss' % scope, values=[y, y_hat]):
+    with tf.compat.v1.variable_scope('%s/loss' % scope, values=[y, y_hat]):
         xent_vec = tf.nn.sigmoid_cross_entropy_with_logits(labels=y, logits=y_hat, name='phoc_sigmoid_xent_vec')
         loss = reduction(xent_vec, name='phoc_loss')
     return loss
@@ -98,7 +98,7 @@ class PhocEmbedding(TFNetwork, StdPHOC):
                     return arg_sc
 
         with slim.arg_scope(_args_scope()):
-            with tf.variable_scope(scope, scope, [x, b], reuse=reuse) as sc:
+            with tf.compat.v1.variable_scope(scope, scope, [x, b], reuse=reuse) as sc:
                 end_points_collection = sc.name + '_end_points'
                 # Collect outputs for conv2d, fully_connected and max_pool2d.
                 with slim.arg_scope([slim.conv2d, slim.fully_connected, slim.max_pool2d],
@@ -155,7 +155,7 @@ class MyOldPHOC(PhocEmbedding):
                     return arg_sc
 
         with slim.arg_scope(_args_scope()):
-            with tf.variable_scope(scope, scope, [x, b], reuse=reuse) as sc:
+            with tf.compat.v1.variable_scope(scope, scope, [x, b], reuse=reuse) as sc:
                 end_points_collection = sc.name + '_end_points'
                 # Collect outputs for conv2d, fully_connected and max_pool2d.
                 with slim.arg_scope([slim.conv2d, slim.fully_connected, slim.max_pool2d],
@@ -182,7 +182,7 @@ class MyOldPHOC(PhocEmbedding):
         phoc_dim = self.args.phoc_dim
 
         with slim.arg_scope(_args_scope(act_func, self.args.box_filter_L2_reg)):
-            with tf.variable_scope(self.scope, self.scope, [v_phoc], reuse=reuse) as sc:
+            with tf.compat.v1.variable_scope(self.scope, self.scope, [v_phoc], reuse=reuse) as sc:
                 end_points_collection = sc.name + '_end_points'
                 # Collect outputs for conv2d, fully_connected and max_pool2d.
                 with slim.arg_scope([slim.conv2d, slim.fully_connected, slim.max_pool2d],

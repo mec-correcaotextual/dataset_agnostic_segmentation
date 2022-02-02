@@ -59,7 +59,6 @@ class AugmentationBase(object):
         return resized_image, boxes
 
 
-
 class PartilPage(AugmentationBase):
     """ 
     Crop part of the image and only keep boxes that are fully inside the cropped region
@@ -73,7 +72,7 @@ class PartilPage(AugmentationBase):
         # try five times
         while not idx.size and count < 5:
             count += 1
-            idx, z = self.box_filter(boxes, image.shape, (2*self._th, 2*self._tw))
+            idx, z = self.box_filter(boxes, image.shape, (2 * self._th, 2 * self._tw))
             idx = np.array(idx)
         # if failed just skip the cropping
         if idx.size < 5 or max(z) < 1:
@@ -92,15 +91,16 @@ class PartilPage(AugmentationBase):
     def sq_size(limit, size):
         dy = int(size[0] / 2)
         dx = int(size[1] / 2)
-        y = np.random.randint(dy, max(limit[0] - dy, dy+1))
-        x = np.random.randint(dx, max(limit[1] - dx, dx+1))
+        y = np.random.randint(dy, max(limit[0] - dy, dy + 1))
+        x = np.random.randint(dx, max(limit[1] - dx, dx + 1))
         return x - dx, y - dy, x + dx, y + dy
 
     @staticmethod
     def box_filter(boxes, limits, size, border=20):
         z = PartilPage.sq_size(limits, size)
         # Pick boxes that fall inside new image boundaries
-        good_idx = np.where((boxes[:, 0] > z[0]) & (boxes[:, 1] > z[1]) & (boxes[:, 2] < z[2]) & (boxes[:, 3] < z[3]))[0]
+        good_idx = np.where((boxes[:, 0] > z[0]) & (boxes[:, 1] > z[1]) & (boxes[:, 2] < z[2]) & (boxes[:, 3] < z[3]))[
+            0]
         # If boundaries are empty...
         if good_idx.shape[0] < 1:
             return [], (0, 0, 0, 0)
@@ -108,13 +108,15 @@ class PartilPage(AugmentationBase):
         limits_of_good_boxes = np.concatenate((good_boxes[:, :2].min(0), good_boxes[:, 2:].max(0)))
 
         new_z = np.array([max(limits_of_good_boxes[0] - border, 0), max(limits_of_good_boxes[1] - border, 0),
-                          min(limits_of_good_boxes[2] + border, limits[1]), min(limits_of_good_boxes[3] + border, limits[0])])\
+                          min(limits_of_good_boxes[2] + border, limits[1]),
+                          min(limits_of_good_boxes[3] + border, limits[0])]) \
             .astype(np.int32)
         return good_idx, new_z
 
+
 @jit
 def adjust_boxes(boxes, start_point):
-    new_boxes = boxes - np.array(start_point*2)[np.newaxis, :]
+    new_boxes = boxes - np.array(start_point * 2)[np.newaxis, :]
     return new_boxes
 
 
@@ -173,6 +175,7 @@ class DialationErosio(AugmentationBase):
     """
     Dialate or erode word images
     """
+
     def __init__(self, dialation_prob=0.5, skip_gray_prob=0.0, apply_prob=0.3, **kwargs):
         super(DialationErosio, self).__init__(**kwargs)
         self.skip_gray_prob = skip_gray_prob
@@ -195,10 +198,11 @@ class DialationErosio(AugmentationBase):
         # print('Agument: %4.3f' % toc2)
         # gray_scale = np.repeat(gray_scale[:,:, np.newaxis], 3, axis=2)
         gray_scale = expand(gray_scale)
-        q = 0.4 + 0.2*np.random.rand()
-        gray_scale = np.array(q*gray_scale + (1-q)*image, dtype=np.uint8)
+        q = 0.4 + 0.2 * np.random.rand()
+        gray_scale = np.array(q * gray_scale + (1 - q) * image, dtype=np.uint8)
         # print('expand: %4.3f' % toc3)
         return gray_scale, boxes, meta_image
+
 
 @jit(uint8(uint8, int32, uint8, float32), nogil=True)
 def augment_boxes(gray_scale, boxes, kernel, prob):
@@ -206,12 +210,13 @@ def augment_boxes(gray_scale, boxes, kernel, prob):
         img = gray_scale[b[1]:b[3], b[0]:b[2]]
         p = np.random.rand()
         if p < prob and img.shape[0] > 1 and img.shape[1] > 1:
-        # if img.shape[0] > 1 and img.shape[1] > 1:
+            # if img.shape[0] > 1 and img.shape[1] > 1:
             augmented = cv2.dilate(img, kernel=kernel, iterations=1)
         else:
             augmented = img
         gray_scale[b[1]:b[3], b[0]:b[2]] = augmented
     return gray_scale
+
 
 @jit(uint8(uint8), nogil=True)
 def expand(gray_scale):
@@ -278,6 +283,7 @@ class ImageEmbed(AugmentationBase):
 
         return tw, th, x0, y0
 
+
 class GaussianNoise(AugmentationBase):
 
     def __init__(self, target_width, target_height, debug=False, **kwargs):
@@ -289,7 +295,7 @@ class GaussianNoise(AugmentationBase):
         # Noise apply probability
         if np.random.rand() >= self._prob:
             return image, boxes, meta_image
-        new_img = image * np.random.normal(np.ones(image.shape[:-1] + (1, )), 0.15, image.shape[:-1] + (1, ))
+        new_img = image * np.random.normal(np.ones(image.shape[:-1] + (1,)), 0.15, image.shape[:-1] + (1,))
         return new_img, boxes, meta_image
 
 
@@ -333,7 +339,7 @@ class ImageSplitter(object):
 
     def get_next_box(self):
         box = self._boxes.pop(0)
-        if self._splits < self.max_splits and (box[2] - box[0] > 2*self.max_w and box[3] - box[1] > 2*self.max_h):
+        if self._splits < self.max_splits and (box[2] - box[0] > 2 * self.max_w and box[3] - box[1] > 2 * self.max_h):
             self._splits += 1
             boxes = self.split(box)
             for b in boxes:
@@ -343,13 +349,15 @@ class ImageSplitter(object):
         init_y = box[1]
         final_x = box[2]
         final_y = box[3]
-        line_arrays = init_y + np.cumsum(np.random.randint(self.max_h, self.max_h + 10, int((final_y - init_y) / self.max_h) - 1))
+        line_arrays = init_y + np.cumsum(
+            np.random.randint(self.max_h, self.max_h + 10, int((final_y - init_y) / self.max_h) - 1))
         return init_x, final_x, init_y, final_y, line_arrays
 
     def split(self, box):
         s = 0
         return_boxes = []
-        indicator = (np.random.rand() < 0.5) #and box[2] - box[0] > 2*self.max_w) or (box[2] - box[0] > 2*self.max_w and box[3] - box[1] < 2*self.max_h)
+        indicator = (
+                    np.random.rand() < 0.5)  # and box[2] - box[0] > 2*self.max_w) or (box[2] - box[0] > 2*self.max_w and box[3] - box[1] < 2*self.max_h)
         if indicator:
             while len(return_boxes) < 1:
                 s = np.random.randint(box[0] + self.max_w, box[2] - self.max_w)
@@ -389,7 +397,7 @@ class WordAranger(object):
 
         if self.empty:
             dh = np.random.randint(1200, 4500)
-            self.image = np.ones((dh, int(dh/1.33), 3))*128.
+            self.image = np.ones((dh, int(dh / 1.33), 3)) * 128.
         self.canvas = self._get_canvas()
 
     def get_new_page(self):
@@ -430,8 +438,10 @@ class WordAranger(object):
         new_box = np.array(new_box, dtype=np.int32)
         old_box = np.array(old_box, dtype=np.int32)
         gamma = np.random.beta(1.1, 0.1)
-        dy[new_box[1]:new_box[3], new_box[0]:new_box[2], :] = (gamma)*img[old_box[1]:old_box[3], old_box[0]:old_box[2], :] + \
-                                                              (1-gamma)*dy[new_box[1]:new_box[3], new_box[0]:new_box[2], :]
+        dy[new_box[1]:new_box[3], new_box[0]:new_box[2], :] = (gamma) * img[old_box[1]:old_box[3],
+                                                                        old_box[0]:old_box[2], :] + \
+                                                              (1 - gamma) * dy[new_box[1]:new_box[3],
+                                                                            new_box[0]:new_box[2], :]
 
     def fill_line(self, strt, end):
         gappines = np.random.randint(20, 150)
@@ -480,7 +490,6 @@ class WordAranger(object):
         return box
 
 
-
 # @jit
 def reorder_boxes(image, boxes):
     dx = np.mean(image, axis=(0, 1))[np.newaxis, np.newaxis, :]
@@ -508,7 +517,8 @@ def reorder_boxes(image, boxes):
 
         new_box = BoxRearange.box_mover(b, (next_x, line_arrays[j] + rnd_shift()))
         new_boxes.append(new_box)
-        dy[new_box[1]:new_box[3], new_box[0]:new_box[2], :] = gamma * box_img + (1 - gamma) * dy[new_box[1]:new_box[3], new_box[0]:new_box[2], :]
+        dy[new_box[1]:new_box[3], new_box[0]:new_box[2], :] = gamma * box_img + (1 - gamma) * dy[new_box[1]:new_box[3],
+                                                                                              new_box[0]:new_box[2], :]
         next_x = new_box[2] + max(rnd_shift(), 0)
 
     return dy, np.array(new_boxes)
@@ -550,8 +560,6 @@ def test_augmentations():
         img, boxes = batch['image'][0, :], batch['gt_boxes']
         debugShowBoxes(img / 255. / 255., boxes=boxes[:, 1:], wait=300)
 
+
 if __name__ == '__main__':
     test_augmentations()
-
-
-

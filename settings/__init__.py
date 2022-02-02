@@ -1,11 +1,11 @@
 from collections import namedtuple
 import tensorflow as tf
-from tensorflow.contrib.keras.python.keras import backend as K
-from input_stream import get_dataset_loader, log_params, write_params_to_args, get_dataset_loader_by_name
+from tensorflow.keras import backend as K
+from .input_stream import get_dataset_loader, log_params, write_params_to_args, get_dataset_loader_by_name
 from lib import helpers as utils
 from models.specs import word_embeddings, TFNetwork
 from tensorflow.python import debug as tf_debug
-from pipeline import get_pipeline
+from .pipeline import get_pipeline
 
 placeholders = namedtuple('X', ['images', 'box_viz_images', 'gt_heatmap', 'gt_boxes', 'gt_phocs', 'anchor_points', 'gt_deltas', 'point_labels', 'train_flag'])
 
@@ -24,21 +24,21 @@ def get_inputs(batch_size=1, target_size=(900, 1200), fmap=(112, 150), phoc_dim=
     Generate graph placeholders and return them as a namedtuple
     """
 
-    image = tf.placeholder(tf.float32, [batch_size, target_size[1], target_size[0], 3], name='image')
+    image = tf.compat.v1.placeholder(tf.float32, [batch_size, target_size[1], target_size[0], 3], name='image')
 
-    box_viz = tf.placeholder(tf.float32, [batch_size, target_size[1], target_size[0], 3], name='box_viz_image')
+    box_viz = tf.compat.v1.placeholder(tf.float32, [batch_size, target_size[1], target_size[0], 3], name='box_viz_image')
 
-    heatmap = tf.placeholder(tf.float32, [batch_size, target_size[1], target_size[0], 1], name='heatmap')
+    heatmap = tf.compat.v1.placeholder(tf.float32, [batch_size, target_size[1], target_size[0], 1], name='heatmap')
 
     # First coord is batch index
-    tf_gt_boxes = tf.placeholder(tf.float32, [None, 5], name='gt_boxes')
-    gt_phoc_tensor = tf.placeholder(tf.float32, [None, phoc_dim + 1], name='gt_phocs')
+    tf_gt_boxes = tf.compat.v1.placeholder(tf.float32, [None, 5], name='gt_boxes')
+    gt_phoc_tensor = tf.compat.v1.placeholder(tf.float32, [None, phoc_dim + 1], name='gt_phocs')
 
-    relative_points = tf.placeholder(tf.float32, [1, fmap[0]*fmap[1], 2], name='relative_points')
+    relative_points = tf.compat.v1.placeholder(tf.float32, [1, fmap[0]*fmap[1], 2], name='relative_points')
 
-    cntr_box_targets = tf.placeholder(tf.float32, [None, fmap[0]*fmap[1], 4], name='cntr_box_target')
+    cntr_box_targets = tf.compat.v1.placeholder(tf.float32, [None, fmap[0]*fmap[1], 4], name='cntr_box_target')
 
-    cntr_box_labels = tf.placeholder(tf.float32, [None, fmap[0]*fmap[1]], name='cntr_box_labels')
+    cntr_box_labels = tf.compat.v1.placeholder(tf.float32, [None, fmap[0]*fmap[1]], name='cntr_box_labels')
 
     # Use Keras' train mode placeholder
     is_training = K.learning_phase()
@@ -81,27 +81,27 @@ def get_session(P):
         tf_debug - boolean. If true run session with TF debugger
 
     """
-    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=P.gpu_alloc, allow_growth=True)
-    sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
+    gpu_options = tf.compat.v1.GPUOptions(per_process_gpu_memory_fraction=P.gpu_alloc, allow_growth=True)
+    sess = tf.compat.v1.Session(config=tf.compat.v1.ConfigProto(gpu_options=gpu_options))
     if P.tf_debug:
         sess = tf_debug.LocalCLIDebugWrapperSession(sess)
     return sess
 
 
 def get_train_op(loss, lr, params, train_iters=None, var_list=None, update_ops=None, global_step=None, name='box_filter',
-                 optimizer=tf.train.AdamOptimizer, **kwargs):
+                 optimizer=tf.compat.v1.train.AdamOptimizer, **kwargs):
     """
     Generate Train op and global step for a loss
     """
     if global_step is None:
-        global_step = tf.get_variable(name='%s_global_step' % name, dtype=tf.int32, initializer=0, trainable=False)
+        global_step = tf.compat.v1.get_variable(name='%s_global_step' % name, dtype=tf.int32, initializer=0, trainable=False)
     train_iters = params.iters if train_iters is None else train_iters
     decay_steps = int(
         train_iters * params.decay_after_it_ratio) if params.decay_after_it_ratio < 1 else params.decay_after_it_ratio
     print('Decay after: %d' % decay_steps)
-    lr = tf.train.exponential_decay(learning_rate=lr, global_step=global_step, decay_steps=decay_steps,
+    lr = tf.compat.v1.train.exponential_decay(learning_rate=lr, global_step=global_step, decay_steps=decay_steps,
                                     decay_rate=params.learning_rate_decay, staircase=True)
-    tf.add_to_collection('LearningRate', lr)
+    tf.compat.v1.add_to_collection('LearningRate', lr)
 
     opt = optimizer(learning_rate=lr, **kwargs)
 

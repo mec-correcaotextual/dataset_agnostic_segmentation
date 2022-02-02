@@ -19,12 +19,12 @@ def random_boxes_ops(gt_boxes, scope, num_classes, default_image_size, boxes_per
         boxes_per_class = [boxes_per_class]*num_classes
     assert isinstance(boxes_per_class, list), "Pass list of int as boxes_per_class"
 
-    with tf.variable_scope('%s/random_boxes' % scope, values=[gt_boxes]):
+    with tf.compat.v1.variable_scope('%s/random_boxes' % scope, values=[gt_boxes]):
         func = partial(random_rois, image_size=default_image_size, num_classes=num_classes, num_boxes_per_class=boxes_per_class, lower_bound=iou_cls_lower_bound,
                        tf_format_in=tf_format_in, tf_format_out=tf_format_out)
 
-        # TODO: This fails if we can't find sufficient number of boxes. It seems pyfunc makes it difficult to get the actual dimensions of what's comming out of it.
-        # TODO: refactor random_rois to be fully TF based
+        # TODO: This fails if we can't find sufficient number of boxes. It seems pyfunc makes it difficult to get the
+        #  actual dimensions of what's comming out of it. TODO: refactor random_rois to be fully TF based
         random_boxes_shape = (batch_size * sum(boxes_per_class), 6)
 
         if gt_phocs is not None:
@@ -33,7 +33,7 @@ def random_boxes_ops(gt_boxes, scope, num_classes, default_image_size, boxes_per
             phocs.set_shape((batch_size * sum(boxes_per_class), phoc_dim))
             phocs = tf.identity(phocs, name='rnd_phoc_assignment')
         else:
-            rois_and_labels = tf.py_func(func, [gt_boxes], tf.float32, tf.float32)
+            rois_and_labels = tf.compat.v1.py_func(func, [gt_boxes], tf.float32, tf.float32)
 
         rois_and_labels.set_shape(random_boxes_shape)
         rois = tf.identity(rois_and_labels[:, :5], name='box_filter_rois')
@@ -85,7 +85,8 @@ def random_rois(batch_gt_boxes, batch_embeddings=None, image_size=(900, 1200), n
         rois[:, 1::2] = np.minimum(np.maximum(rois[:, 1::2], 0), image_size[1])
         ovlps = bbox_overlaps(rois.astype(np.float32), gt_boxes.astype(np.float32))
         scores = ovlps.max(1).flatten()
-        # NOTICE: the following assumes classes can be 5 or 2 by default, for any other num_classes you should set a lower_bound that makes sense
+        # NOTICE: the following assumes classes can be 5 or 2 by default, for any other num_classes you should set a
+        # lower_bound that makes sense
         lower_bound = (0.35 if num_classes == 5 else 0.2) if lower_bound is None else lower_bound
         class_bins = np.linspace(lower_bound, 1., num_classes + 1)[1:]
         func = partial(_box_scoring_helper, bins=class_bins)

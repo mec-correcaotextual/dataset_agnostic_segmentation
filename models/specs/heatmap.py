@@ -3,12 +3,15 @@ from __future__ import division
 from __future__ import print_function
 
 import tensorflow as tf
-from tensorflow.contrib import slim
-from tensorflow.contrib.keras.api.keras import backend as Kb
+
+import tf_slim as slim
+from tensorflow.keras import backend as Kb
+# from tensorflow.contrib.keras.api.keras import backend as Kb
 
 from models.specs import TFNetwork
 from lib.nn.losses import weighted_xent_with_reshape, weighted_sigmoid
 from models.specs import resnet_from_blocks, resnet_v2_block, get_vars
+
 
 # def feature_map(x, scope,  build_phocs=False, arch='base', dropout=1.0, **kwargs):
 #     if arch == 'base' and build_phocs:
@@ -41,7 +44,8 @@ from models.specs import resnet_from_blocks, resnet_v2_block, get_vars
 #     return net
 
 
-def heatmap(x, scope, output_size=2, L2_reg=0.0, reuse=None, train_mode=True, linear_output=True, act_func=tf.nn.relu, **kwargs):
+def heatmap(x, scope, output_size=2, L2_reg=0.0, reuse=None, train_mode=True, linear_output=True, act_func=tf.nn.relu,
+            **kwargs):
     def _args_scope():
         with slim.arg_scope([slim.conv2d, slim.fully_connected],
                             activation_fn=act_func,
@@ -50,7 +54,7 @@ def heatmap(x, scope, output_size=2, L2_reg=0.0, reuse=None, train_mode=True, li
                 return arg_sc
 
     with slim.arg_scope(_args_scope()):
-        with tf.variable_scope(scope, 'hmap', [x], reuse=reuse) as sc:
+        with tf.compat.v1.variable_scope(scope, 'hmap', [x], reuse=reuse) as sc:
             end_points_collection = sc.name + '_end_points'
             # Collect outputs for conv2d, fully_connected and max_pool2d.
             with slim.arg_scope([slim.conv2d, slim.fully_connected, slim.max_pool2d, slim.conv2d_transpose],
@@ -70,7 +74,8 @@ def heatmap(x, scope, output_size=2, L2_reg=0.0, reuse=None, train_mode=True, li
                 trim_hmap = slim.conv2d(trim_hmap, 4, [3, 3], scope='conv6')
                 trim_hmap = slim.conv2d(trim_hmap, output_size, kernel_size=[3, 3], scope='conv7')
                 if linear_output:
-                    trim_hmap = slim.conv2d(trim_hmap, output_size, kernel_size=[1, 1], activation_fn=None, scope='conv8')
+                    trim_hmap = slim.conv2d(trim_hmap, output_size, kernel_size=[1, 1], activation_fn=None,
+                                            scope='conv8')
 
     return trim_hmap
 
@@ -81,14 +86,16 @@ def pad_features(inputs, size, scope, pad_x=4, pad_y=0, kernel=None, reuse=None)
     """
     if kernel is None:
         kernel = [3, 3]
-    with tf.variable_scope(scope, 'bottlneck', [inputs], reuse=reuse) as sc:
+    with tf.compat.v1.variable_scope(scope, 'bottlneck', [inputs], reuse=reuse) as sc:
         bottle = slim.conv2d_transpose(inputs, size, kernel_size=kernel, stride=[2, 2], scope='upconv_bottleneck')
-        bottle = tf.pad(bottle, paddings=[[0, 0], [0, 0], [0, pad_x], [0, pad_y]], mode='CONSTANT', name='pad_bottleneck')
+        bottle = tf.pad(bottle, paddings=[[0, 0], [0, 0], [0, pad_x], [0, pad_y]], mode='CONSTANT',
+                        name='pad_bottleneck')
     return bottle
 
 
 def heatmap_loss_xent(y, y_hat, weight_pos, weight_neg, with_border=False):
-    unpacked_xent_loss = weighted_xent_with_reshape(predictions=y_hat, raw_labels=y, w_pos=weight_pos, w_neg=weight_neg, with_border=with_border)
+    unpacked_xent_loss = weighted_xent_with_reshape(predictions=y_hat, raw_labels=y, w_pos=weight_pos, w_neg=weight_neg,
+                                                    with_border=with_border)
     cls_loss = tf.reduce_mean(unpacked_xent_loss, name='cls_loss')
     return cls_loss
 
@@ -137,7 +144,8 @@ class FeatureMap(TFNetwork):
         reuse = True if self._calls > 0 else None
 
         net, end_points = resnet_from_blocks(inputs, blocks, scope=self.scope, reuse=reuse)
-        net = slim.dropout(net, keep_prob=(1-self.args.dropout), scope='%s_dropout' % self.scope, is_training=Kb.learning_phase())
+        net = slim.dropout(net, keep_prob=(1 - self.args.dropout), scope='%s_dropout' % self.scope,
+                           is_training=Kb.learning_phase())
         return net
 
 
@@ -152,5 +160,6 @@ class HeatMap(TFNetwork):
     def heatmap(self, x):
         reuse = True if self._calls > 0 else None
         self._calls += 1
-        return heatmap(x, scope=self.scope, output_size=self.output_size, L2_reg=self.args.heatmap_L2_reg, train_mode=True, linear_output=self.linear_output,
+        return heatmap(x, scope=self.scope, output_size=self.output_size, L2_reg=self.args.heatmap_L2_reg,
+                       train_mode=True, linear_output=self.linear_output,
                        reuse=reuse)
