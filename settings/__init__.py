@@ -6,7 +6,7 @@ from lib import helpers as utils
 from models.specs import word_embeddings, TFNetwork
 from tensorflow.python import debug as tf_debug
 from .pipeline import get_pipeline
-
+tf.compat.v1.disable_eager_execution()
 placeholders = namedtuple('X', ['images', 'box_viz_images', 'gt_heatmap', 'gt_boxes', 'gt_phocs', 'anchor_points', 'gt_deltas', 'point_labels', 'train_flag'])
 
 

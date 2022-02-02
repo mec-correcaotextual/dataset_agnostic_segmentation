@@ -20,7 +20,7 @@ def regression_features(x, scope, L2_reg=0.0, reuse=None, train_mode=True, act_f
                 return arg_sc
 
     with slim.arg_scope(_args_scope()):
-        with tf.variable_scope(scope, scope, [x], reuse=reuse) as sc:
+        with tf.compat.v1.variable_scope(scope, scope, [x], reuse=reuse) as sc:
             end_points_collection = sc.name + '_end_points'
             # Collect outputs for conv2d, fully_connected and max_pool2d.
             with slim.arg_scope([slim.conv2d, slim.fully_connected, slim.max_pool2d],
@@ -72,7 +72,7 @@ def box_shifts(x, scope, L2_reg=0.0, reuse=None, train_mode=True, act_func=tf.nn
                 return arg_sc
 
     with slim.arg_scope(_args_scope()):
-        with tf.variable_scope(scope, scope, [x], reuse=reuse) as sc:
+        with tf.compat.v1.variable_scope(scope, scope, [x], reuse=reuse) as sc:
             end_points_collection = sc.name + '_end_points'
             # Collect outputs for conv2d, fully_connected and max_pool2d.
             with slim.arg_scope([slim.conv2d, slim.fully_connected, slim.max_pool2d],
@@ -97,19 +97,19 @@ def boxes_from_shifts_op(shifts, rel_points, inputs, scale_factor, scope, debug=
     :param debug:
     :return:
     """
-    with tf.variable_scope(scope, 'boxes_from_shifts', values=[shifts]):
+    with tf.compat.v1.variable_scope(scope, 'boxes_from_shifts', values=[shifts]):
         inp_shape = inputs.get_shape().as_list()[1:3][::-1]
         scale_tensor = tf.cast(tf.reshape(tf.concat([inp_shape, inp_shape], axis=0, name='scale_tensor'), [1, 1, 4]),
                                tf.float32)
-        shifts = tf.div(shifts, scale_factor, name='scaled_shifts')
+        shifts = tf.compat.v1.div(shifts, scale_factor, name='scaled_shifts')
 
-        x1 = tf.expand_dims(rel_points[:, :, 0] - shifts[:, :, 0], dim=-1, name='x1')
-        x2 = tf.expand_dims(rel_points[:, :, 0] + shifts[:, :, 1], dim=-1, name='x2')
+        x1 = tf.compat.v1.expand_dims(rel_points[:, :, 0] - shifts[:, :, 0], dim=-1, name='x1')
+        x2 = tf.compat.v1.expand_dims(rel_points[:, :, 0] + shifts[:, :, 1], dim=-1, name='x2')
 
-        y1 = tf.expand_dims(rel_points[:, :, 1] - shifts[:, :, 2], dim=-1, name='y1')
-        y2 = tf.expand_dims(rel_points[:, :, 1] + shifts[:, :, 3], dim=-1, name='y2')
+        y1 = tf.compat.v1.expand_dims(rel_points[:, :, 1] - shifts[:, :, 2], dim=-1, name='y1')
+        y2 = tf.compat.v1.expand_dims(rel_points[:, :, 1] + shifts[:, :, 3], dim=-1, name='y2')
 
-        boxes = tf.concat([y1, x1, y2, x2], axis=-1, name='predicted_boxes')
+        boxes = tf.compat.v1.concat([y1, x1, y2, x2], axis=-1, name='predicted_boxes')
         output = boxes
 
         if debug:
@@ -141,7 +141,7 @@ def filter_boxes_on_size(boxes, target_size, min_side_len_pixels=8, scope='filte
     :param min_side_len_pixels: (int) minimum side length
     :return: (Tensor) of degree 2 (?, 5) - filtered boxes
     """
-    with tf.variable_scope(scope, 'filter_boxes_on_size', values=[boxes]):
+    with tf.compat.v1.variable_scope(scope, 'filter_boxes_on_size', values=[boxes]):
         width = tf.subtract(boxes[:, 4], boxes[:, 2], name='boxes_width')
         height = tf.subtract(boxes[:, 3], boxes[:, 1], name='boxes_height')
         dx = tf.greater_equal(width, min_side_len_pixels / float(target_size[0]), name='t1')
@@ -156,7 +156,7 @@ def filter_boxes_on_size(boxes, target_size, min_side_len_pixels=8, scope='filte
 def reg_loss(y, y_hat, inside_box_flags, weight_pos, weight_neg, batch_size, scope):
     all_losses = []
     for i in range(batch_size):
-        with tf.name_scope('%s/loss_b%d' % (scope, i), [y, y_hat]):
+        with tf.compat.v1.name_scope('%s/loss_b%d' % (scope, i), values=[y, y_hat]):
 
             # Find points that are well inside a word boundigng box
             flag_cond = tf.where(inside_box_flags >= 0)

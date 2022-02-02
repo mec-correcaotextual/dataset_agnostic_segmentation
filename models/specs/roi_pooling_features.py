@@ -38,7 +38,7 @@ def iou_prediction(features, num_classes, scope, reuse=None, L2_reg=0.0, act_fun
                 return arg_sc
 
     with slim.arg_scope(_args_scope()):
-        with tf.variable_scope(scope, scope, [features], reuse=reuse) as sc:
+        with tf.compat.v1.variable_scope(scope, scope, [features], reuse=reuse) as sc:
             end_points_collection = sc.name + '_end_points'
             # Collect outputs for conv2d, fully_connected and max_pool2d.
             with slim.arg_scope([slim.conv2d, slim.fully_connected, slim.max_pool2d],
@@ -51,7 +51,7 @@ def iou_prediction(features, num_classes, scope, reuse=None, L2_reg=0.0, act_fun
 
 
 def iou_loss(y, y_hat, scope, reduction=tf.reduce_mean):
-    with tf.variable_scope('%s/loss' % scope, values=[y, y_hat]):
+    with tf.compat.v1.variable_scope('%s/loss' % scope, values=[y, y_hat]):
         cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y, logits=y_hat, name='cross_entropy')
         mean_xent = reduction(cross_entropy, name='mean_xent_loss')
     return mean_xent
@@ -69,7 +69,7 @@ def phoc_loss_func(y, y_hat, scope, reduction=tf.reduce_mean):
     """
     # gy = tf.squeeze(tf.gather(y, tf.where(y_assigned_labels >= iou_lables_thresh)), name='gt_phocs_for_loss')
     # gy_hat = tf.squeeze(tf.gather(y_hat, tf.where(y_assigned_labels >= iou_lables_thresh)), name='pred_phocs_for_loss')
-    with tf.variable_scope('%s/loss' % scope, values=[y, y_hat]):
+    with tf.compat.v1.variable_scope('%s/loss' % scope, values=[y, y_hat]):
         xent_vec = tf.nn.sigmoid_cross_entropy_with_logits(labels=y, logits=y_hat, name='phoc_sigmoid_xent_vec')
         loss = reduction(xent_vec, name='phoc_loss')
     return loss
@@ -115,7 +115,7 @@ class IoUPrediction(TFNetwork):
                     return arg_sc
 
         with slim.arg_scope(_args_scope()):
-            with tf.variable_scope(scope, scope, [x, b], reuse=reuse) as sc:
+            with tf.compat.v1.variable_scope(scope, scope, [x, b], reuse=reuse) as sc:
                 end_points_collection = sc.name + '_end_points'
                 # Collect outputs for conv2d, fully_connected and max_pool2d.
                 with slim.arg_scope([slim.conv2d, slim.fully_connected, slim.max_pool2d],

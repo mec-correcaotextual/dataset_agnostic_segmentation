@@ -19,7 +19,7 @@ def weighted_sigmoid(predictions, raw_labels, w_pos, w_neg):
 
 def weighted_l1(predictions, images):
     with tf.name_scope('weighted_sigmoid'):
-        loss = tf.losses.absolute_difference(images, predictions, weights=1.0, scope='weighted_loss')
+        loss = tf.compat.v1.losses.absolute_difference(images, predictions, weights=1.0, scope='weighted_loss')
     return loss
 
 

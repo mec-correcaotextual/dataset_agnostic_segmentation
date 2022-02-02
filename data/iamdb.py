@@ -76,10 +76,12 @@ class IamDataset(object):
         form_id = self._proc_word_id_to_form_id(id)
         correct_segment = struct[1]
         gray_scale = struct[2]
-        x = float(filter(lambda x: x in string.printable, struct[3]))
-        y = float(filter(lambda x: x in string.printable, struct[4]))
-        w = float(filter(lambda x: x in string.printable, struct[5]))
-        h = float(filter(lambda x: x in string.printable, struct[6]))
+        #print(list(filter(lambda x: x in string.printable, struct[3])))
+        # DONE CODE UPDATE TO 3.+
+        x = float(''.join(filter(lambda x: x in string.printable, struct[3])))
+        y = float(''.join(filter(lambda x: x in string.printable, struct[4])))
+        w = float(''.join(filter(lambda x: x in string.printable, struct[5])))
+        h = float(''.join(filter(lambda x: x in string.printable, struct[6])))
         part_of_speech = filter(lambda x: x in string.printable, struct[7])
         word = filter(lambda x: x in string.printable, struct[8])
 
