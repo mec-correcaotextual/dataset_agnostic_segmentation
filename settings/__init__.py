@@ -120,15 +120,15 @@ def make_summaries(scalars=None, histograms=None, images=None, max_outputs=10):
     if scalars:
         assert isinstance(scalars, (list, tuple,))
         for s in scalars:
-            tf.summary.scalar('scalar/%s' % s.name, s)
+            tf.compat.v1.summary.scalar('scalar/%s' % s.name, s)
 
     if histograms:
         assert isinstance(histograms, (list, tuple,))
         for his in histograms:
-            tf.summary.histogram('hist/%s' % his.name, his)
+            tf.compat.v1.summary.histogram('hist/%s' % his.name, his)
 
     if images:
         assert isinstance(images, (list, tuple,))
         for img in images:
-            tf.summary.image('img/%s' % img.name, img, max_outputs=max_outputs)
+            tf.compat.v1.summary.image('img/%s' % img.name, img, max_outputs=max_outputs)
     return
