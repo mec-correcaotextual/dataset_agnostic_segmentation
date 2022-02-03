@@ -11,7 +11,7 @@ import cv2
 import numpy as np
 
 from data.augmentations import AugmentationBase, Resize
-import pdb
+
 
 
 class Producer(Thread):
@@ -218,8 +218,8 @@ class PipelineBase(object):
 
         image = meta_image.getImage()
         bboxes = meta_image.bboxes
-        print(image)
-        pdb.set_trace()
+        # print(image)
+        # pdb.set_trace()
         if self.target_h is not None and self.target_w is not None:
             # if no augmentations is added, add the resize
             if not self._augmentations:
@@ -269,7 +269,7 @@ class PipelineBase(object):
         in_batch_treatment = {}
         # batch_slice is an output_dict from prepare_data_for_neural_net
         for j, s in enumerate(batch_slice):
-            for k, v in s.iteritems():
+            for k, v in s.items():
                 data, in_batch = v
                 in_batch_treatment[k] = in_batch
                 dlist = batch_dict.get(k, [])
@@ -282,7 +282,7 @@ class PipelineBase(object):
                 dlist.append(data)
                 batch_dict[k] = dlist
 
-        for k, v in in_batch_treatment.iteritems():
+        for k, v in in_batch_treatment.items():
             raw_data = batch_dict[k]
 
             if in_batch_treatment[k] == InBatchKeys.list:

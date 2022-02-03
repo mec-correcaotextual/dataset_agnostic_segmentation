@@ -63,7 +63,7 @@ def build_phoc(words, phoc_unigrams, unigram_levels,
     # prepare output matrix
     if on_unknown_unigram not in ['error', 'warn']:
         raise ValueError('I don\'t know the on_unknown_unigram parameter \'%s\'' % on_unknown_unigram)
-    phoc_size = len(phoc_unigrams) * np.sum(unigram_levels)
+    phoc_size = len(list(phoc_unigrams)) * np.sum(unigram_levels)
     if phoc_bigrams is not None:
         phoc_size += len(phoc_bigrams) * np.sum(bigram_levels)
     phocs = np.zeros((len(words), phoc_size))

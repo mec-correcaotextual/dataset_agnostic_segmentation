@@ -20,6 +20,6 @@ def phoc_letters_and_digits(word_list, unigram_levels_list=None):
     word_list = [clean_word(w) for w in word_list]
 
     phocs = build_phoc(word_list, phoc_unigrams=letters_and_digits_unigrams, unigram_levels=unigram_levels_list)
-    phoc_dim = len(letters_and_digits_unigrams) * sum(unigram_levels_list)
+    phoc_dim = len(list(letters_and_digits_unigrams)) * sum(unigram_levels_list)
 
     return phocs, phoc_dim

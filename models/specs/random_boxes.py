@@ -8,7 +8,7 @@ import numpy as np
 import tensorflow as tf
 
 from lib.bbox import bbox_overlaps
-
+import pdb
 
 def random_boxes_ops(gt_boxes, scope, num_classes, default_image_size, boxes_per_class, batch_size, gt_phocs=None, phoc_dim=0, iou_cls_lower_bound=None,
                      tf_format_in=True, tf_format_out=True):
@@ -90,7 +90,9 @@ def random_rois(batch_gt_boxes, batch_embeddings=None, image_size=(900, 1200), n
         lower_bound = (0.35 if num_classes == 5 else 0.2) if lower_bound is None else lower_bound
         class_bins = np.linspace(lower_bound, 1., num_classes + 1)[1:]
         func = partial(_box_scoring_helper, bins=class_bins)
-        labels = np.array(map(func, scores))
+        labels = np.array(list(map(func, scores)))
+        #print(labels)
+        #pdb.set_trace()
         keep = _label_filter_picker_helper(num_classes=num_classes, labels=labels, num_boxes_per_class=num_boxes_per_class)
         rois = rois[keep, :]
         labels = labels[keep]
@@ -128,11 +130,14 @@ def _label_filter_picker_helper(num_classes, labels, num_boxes_per_class):
     else:
         assert len(num_boxes_per_class) == num_classes, "num_boxes_per_class len must equal num_classes"
     output = []
+
     for indx in range(num_classes):
         valid_labels = np.where(labels == indx)[0]
         if valid_labels.shape[0] < 1:
+
             continue
         output.append(np.random.choice(valid_labels, size=num_boxes_per_class[indx], replace=True))
+
     output = np.concatenate(output)
     return output
 
