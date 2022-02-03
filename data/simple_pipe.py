@@ -11,6 +11,7 @@ import cv2
 import numpy as np
 
 from data.augmentations import AugmentationBase, Resize
+import pdb
 
 
 class Producer(Thread):
@@ -63,6 +64,7 @@ class InBatchKeys:
 
 class PipelineError(Exception):
     pass
+
 
 class DataBatch(object):
     images = None
@@ -191,7 +193,7 @@ class PipelineBase(object):
         metas = []
         for i in range(self.PERMUTATION_BATCH):
             try:
-                meta_data = generator.next()
+                meta_data = generator.__next__()
                 if meta_data is None:
                     continue
                 metas.append(meta_data)
@@ -216,7 +218,8 @@ class PipelineBase(object):
 
         image = meta_image.getImage()
         bboxes = meta_image.bboxes
-
+        print(image)
+        pdb.set_trace()
         if self.target_h is not None and self.target_w is not None:
             # if no augmentations is added, add the resize
             if not self._augmentations:
@@ -251,7 +254,7 @@ class PipelineBase(object):
                 continue
             if not isinstance(name, (list, tuple)) and not isinstance(data, (list, tuple)):
                 name = (name,)
-                data = (data, )
+                data = (data,)
             assert len(name) == len(data), 'Names must match data got %d names and %d data' % (len(name), len(data))
             for i in range(len(name)):
                 output_dict.update({name[i]: (data[i], in_batch)})
@@ -275,7 +278,7 @@ class PipelineBase(object):
                 if in_batch == InBatchKeys.hstack:
                     # Assumed we treat something like bboxes or phocs for hstack  -> (n, d) numpy arrays
                     # Assume we add a batch_id dim, (n, m) -> (n, m+1) where 0 dim is batch id
-                    data = np.hstack((np.ones((data.shape[0], 1))*j, data))
+                    data = np.hstack((np.ones((data.shape[0], 1)) * j, data))
                 dlist.append(data)
                 batch_dict[k] = dlist
 
@@ -410,12 +413,13 @@ def image_resize(image, boxes=None, target_y=None, target_x=None, debug=False):
 if __name__ == '__main__':
     from data.iamdb import IamDataset
     from data.data_extenders import phoc_embedding
-    DATA_DIR = 'datasets/iclef'
+
+    DATA_DIR = 'datasets/iamdb'
     data = IamDataset(DATA_DIR)
     data.run()
     it = data.get_iterator(infinite=True)
 
-    pipe = PipelineBase(it, batch_size=1,fmap_x=112, fmap_y=150, trim=0.2, target_x=900, target_y=1200)
+    pipe = PipelineBase(it, batch_size=1, fmap_x=112, fmap_y=150, trim=0.2, target_x=900, target_y=1200)
     pipe.add_extender(('phocs', 'tf_gt_boxes'), phoc_embedding, in_batch='hstack')
     pipe.run(1)
 

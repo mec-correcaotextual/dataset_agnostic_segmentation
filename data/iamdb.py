@@ -76,7 +76,7 @@ class IamDataset(object):
         form_id = self._proc_word_id_to_form_id(id)
         correct_segment = struct[1]
         gray_scale = struct[2]
-        #print(list(filter(lambda x: x in string.printable, struct[3])))
+        # print(list(filter(lambda x: x in string.printable, struct[3])))
         # DONE CODE UPDATE TO 3.+
         x = float(''.join(filter(lambda x: x in string.printable, struct[3])))
         y = float(''.join(filter(lambda x: x in string.printable, struct[4])))
@@ -111,14 +111,16 @@ class IamDataset(object):
     def _make_validation_set(self, size):
         assert size < 1.0, 'val cannot exceed 100%'
         l = len(self.form_ids)
-        val_size = int(l*size)
+        val_size = int(l * size)
         val_set = np.random.choice(np.array(self.form_ids), size=val_size, replace=False)
         return val_set
 
     def get_iterator(self, dataset='train', infinite=False, random=True):
+
         assert dataset in self.idx_files.keys(), 'Following datasets exists: %s' % str(self.idx_files.keys())
         allowed_idx = get_form_idx_from_file(str(Path(self.data_dir) / self.idx_files[dataset]))
         while True:
+
             maybe_random_idx = np.random.permutation(allowed_idx) if random else allowed_idx
             for idx in maybe_random_idx:
                 data_dict = self._produce_data_dict(idx)
@@ -139,7 +141,7 @@ class IamDataset(object):
                         continue
                 else:
                     if validation:
-                       continue
+                        continue
                     else:
                         data_dict = self._produce_data_dict(idx)
                         yield MetaImage(data_dict)
@@ -148,19 +150,26 @@ class IamDataset(object):
                 return
 
     def _produce_data_dict(self, idx, ):
+
         doc = self.data_by_id[idx]
+
         data_dict = {'path': self.image_path_from_doc(idx),
                      'bboxes': self.bboxes_from_doc(doc),
                      'words': doc}
         return data_dict
 
+
 def get_form_idx_from_file(file_name):
     with open(file_name, 'rb') as fp:
         lines = fp.readlines()
-        idx = [v.strip() for v in lines]
+        idx = [str(v.strip(), 'utf-8') for v in lines]
 
     form_idx = {}
     for widx in idx:
-        form_id = '-'.join(widx.split('-')[:-1])
+        splitword = widx.split('-')[:-1]
+
+        form_id = '-'.join(splitword)
         form_idx[form_id] = 1
-    return form_idx.keys()
+    idx_arr = np.array(list(form_idx.keys()))
+
+    return idx_arr

@@ -28,8 +28,8 @@ def get_dataset_loader_by_name(dataset, data_type, args=None):
         else:
             it = iamdb.get_iterator(dataset=data_type, infinite=True)
 
-    elif dataset == 'iclef':
-        iclef = IclefDataset(data_dir='datasets/iclef')
+    elif dataset == 'iamdb':
+        iclef = IclefDataset(data_dir='datasets/iamdb')
         iclef.run()
         if isinstance(data_type, list):
             dlist = [iclef.get_iterator(dataset=dtyp, infinite=True) for dtyp in data_type]

@@ -282,7 +282,7 @@ def mAP_stats(args):
 
 def segment_eval_struct_output(args):
     folder = Path(args.eval_dir)
-    for ds in ['icdar', 'iamdb', 'iclef']:
+    for ds in ['icdar', 'iamdb', 'iamdb']:
         ev_dir = folder.glob('*%s_*/**/eval' % ds)
         for ev in ev_dir:
             source = ev.parent.parent.stem.split('_')[0]

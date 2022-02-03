@@ -34,6 +34,7 @@ class MetaImage(object):
     def getImage(self):
         try:
             if isinstance(self.path, Path):
+                print(self.path)
                 img = cv2.imread(str(self.path))
             else:
                 img = cv2.imread(self.path)
