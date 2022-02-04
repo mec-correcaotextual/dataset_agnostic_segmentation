@@ -231,7 +231,7 @@ class PipelineBase(object):
 
         output = (image, bboxes, meta_image)
 
-        return np.array([output])
+        return np.array([output], dtype=object)
 
     def add_extender(self, names, extender_func, in_batch='list', **kwargs):
         allowed = [InBatchKeys.list, InBatchKeys.vstack, InBatchKeys.hstack]

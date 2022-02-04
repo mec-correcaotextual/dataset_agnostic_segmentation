@@ -199,9 +199,9 @@ class NetworkStructure(object):
 
                 # (7d) PHOC loss
                 # We train phocs only on highly accuracte random boxes
-                accuracte_phocs = tf.where(rnd_iou_labels >= P.min_iou_cls_for_phoc, name='acc_phocs_idx')[:, 0]
-                good_iou_phocs = tf.gather(rnd_phocs, accuracte_phocs, name='acc_phocs')
-                good_iou_logits = tf.gather(rnd_phoc_logits, accuracte_phocs, name='acc_phocs_logits')
+                accuracte_phocs = tf.compat.v1.where(rnd_iou_labels >= P.min_iou_cls_for_phoc, name='acc_phocs_idx')[:, 0]
+                good_iou_phocs = tf.compat.v1.gather(rnd_phocs, accuracte_phocs, name='acc_phocs')
+                good_iou_logits = tf.compat.v1.gather(rnd_phoc_logits, accuracte_phocs, name='acc_phocs_logits')
 
                 L_phoc = phoc_loss_func(y=good_iou_phocs, y_hat=good_iou_logits, scope='phoc_loss', reduction=reduction)
                 keep_my_loss(L_phoc)

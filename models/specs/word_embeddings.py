@@ -2,6 +2,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import pdb
 from abc import ABCMeta, abstractmethod
 
 import tensorflow as tf
@@ -12,25 +13,42 @@ from models.specs import TFNetwork
 from models.specs.roi_pooling_features import iou_prediction
 
 
-def phoc_prediction(features, phoc_dim, scope, reuse=None, L2_reg=0.0, act_func=tf.nn.relu, large_topology=False, dropout=0.0):
-
+def phoc_prediction(features,
+                    phoc_dim,
+                    scope,
+                    reuse=None,
+                    L2_reg=0.0,
+                    act_func=tf.nn.relu,
+                    large_topology=False,
+                    dropout=0.0):
     with slim.arg_scope(_args_scope(act_func, L2_reg)):
         with tf.compat.v1.variable_scope(scope, scope, [features], reuse=reuse) as sc:
             end_points_collection = sc.name + '_end_points'
             # Collect outputs for conv2d, fully_connected and max_pool2d.
-            with slim.arg_scope([slim.conv2d, slim.fully_connected, slim.max_pool2d], outputs_collections=end_points_collection):
+            with slim.arg_scope([slim.conv2d, slim.fully_connected, slim.max_pool2d],
+                                outputs_collections=end_points_collection):
                 if large_topology:
-                    phoc = slim.conv2d(features, 1024, [1, 1], stride=1, activation_fn=act_func, padding='VALID', scope='fc4_phoc')
-                    phoc = slim.conv2d(phoc, 1024, [1, 1], stride=1, activation_fn=act_func, padding='VALID', scope='fc5_phoc')
-                    phoc = slim.conv2d(phoc, 1024, [1, 1], stride=1, activation_fn=act_func, padding='VALID', scope='fc6_phoc')
-                    phoc = slim.conv2d(phoc, phoc_dim, [1, 1], stride=1, activation_fn=None, padding='VALID', scope='fc7_phoc')
+                    phoc = slim.conv2d(features, 1024, [1, 1], stride=1, activation_fn=act_func, padding='VALID',
+                                       scope='fc4_phoc')
+                    phoc = slim.conv2d(phoc, 1024, [1, 1], stride=1, activation_fn=act_func, padding='VALID',
+                                       scope='fc5_phoc')
+                    phoc = slim.conv2d(phoc, 1024, [1, 1], stride=1, activation_fn=act_func, padding='VALID',
+                                       scope='fc6_phoc')
+                    phoc = slim.conv2d(phoc, phoc_dim, [1, 1], stride=1, activation_fn=None, padding='VALID',
+                                       scope='fc7_phoc')
                 else:
-                    phoc = slim.conv2d(features, 1024, [1, 1], stride=1, activation_fn=act_func, padding='VALID', scope='fc1')
-                    phoc = slim.dropout(phoc, keep_prob=1 - dropout, is_training=Kb.learning_phase(), scope='dropout_phoc1')
-                    phoc = slim.conv2d(phoc, 1024, [1, 1], stride=1, activation_fn=act_func, padding='VALID', scope='fc2')
-                    phoc = slim.dropout(phoc, keep_prob=1 - dropout, is_training=Kb.learning_phase(), scope='dropout_phoc2')
-                    phoc = slim.conv2d(phoc, phoc_dim, [1, 1], stride=1, activation_fn=None, padding='VALID', scope='linear')
-                phoc = tf.squeeze(phoc, name='phoc_embd')
+
+                    phoc = slim.conv2d(features, 1024, [1, 1], stride=1, activation_fn=act_func, padding='VALID',
+                                       scope='fc1')
+                    phoc = slim.dropout(phoc, keep_prob=1 - dropout, is_training=Kb.learning_phase(),
+                                        scope='dropout_phoc1')
+                    phoc = slim.conv2d(phoc, 1024, [1, 1], stride=1, activation_fn=act_func, padding='VALID',
+                                       scope='fc2')
+                    phoc = slim.dropout(phoc, keep_prob=1 - dropout, is_training=Kb.learning_phase(),
+                                        scope='dropout_phoc2')
+                    phoc = slim.conv2d(phoc, phoc_dim, [1, 1], stride=1, activation_fn=None, padding='VALID',
+                                       scope='linear')
+                phoc = tf.compat.v1.squeeze(phoc, name='phoc_embd')
 
     return phoc
 
@@ -77,6 +95,7 @@ class PhocEmbedding(TFNetwork, StdPHOC):
 
     def __init__(self, output_shape, act_func=tf.nn.relu, **kwargs):
         super(PhocEmbedding, self).__init__(**kwargs)
+
         act_funcs = {'relu': tf.nn.relu, 'tanh': tf.nn.tanh}
         self.act_func = act_funcs.get(self.args.phoc_act, tf.nn.relu)
         self.output_shape = output_shape
@@ -107,30 +126,39 @@ class PhocEmbedding(TFNetwork, StdPHOC):
                     batch_idx = tf.cast(b[:, 0], dtype=tf.int32, name='batch_idx')
 
                     pooled_features = tf.image.crop_and_resize(x, boxes_input, batch_idx, crop_size=self.output_shape)
-                    phoc_w = slim.conv2d(pooled_features, 1024, [1, 9], stride=[1, 1], padding='VALID', scope='conv1_phoc')
+
+                    phoc_w = slim.conv2d(pooled_features, 1024, [1, 9], stride=[1, 1], padding='VALID',
+                                         scope='conv1_phoc')
                     phoc_w = slim.conv2d(phoc_w, 1024, [2, 1], stride=[1, 1], padding='VALID', scope='conv2_phoc')
-                    phoc_w = slim.dropout(phoc_w, keep_prob=dropout, is_training=Kb.learning_phase(), scope='dropout_phoc1')
+                    phoc_w = slim.dropout(phoc_w, keep_prob=dropout, is_training=Kb.learning_phase(),
+                                          scope='dropout_phoc1')
 
                     phoc_w = slim.conv2d(phoc_w, 1024, [2, 1], stride=[1, 1], padding='VALID', scope='conv3_phoc')
-                    phoc_w = slim.dropout(phoc_w, keep_prob=dropout, is_training=Kb.learning_phase(), scope='dropout_phoc2')
+                    phoc_w = slim.dropout(phoc_w, keep_prob=dropout, is_training=Kb.learning_phase(),
+                                          scope='dropout_phoc2')
 
-                    phoc_h = slim.conv2d(pooled_features, 1024, [3, 3], stride=[1, 1], padding='VALID', scope='conv4_phoc')
+                    phoc_h = slim.conv2d(pooled_features, 1024, [3, 3], stride=[1, 1], padding='VALID',
+                                         scope='conv4_phoc')
                     phoc_h = slim.conv2d(phoc_h, 1024, [1, 3], stride=[1, 1], padding='VALID', scope='conv5_phoc')
-                    phoc_h = slim.dropout(phoc_h, keep_prob=dropout, is_training=Kb.learning_phase(), scope='dropout_phoc3')
+                    phoc_h = slim.dropout(phoc_h, keep_prob=dropout, is_training=Kb.learning_phase(),
+                                          scope='dropout_phoc3')
 
                     phoc_h = slim.conv2d(phoc_h, 1024, [1, 3], stride=[1, 1], padding='VALID', scope='conv6_phoc')
-                    phoc_h = slim.dropout(phoc_h, keep_prob=dropout, is_training=Kb.learning_phase(), scope='dropout_phoc4')
+                    phoc_h = slim.dropout(phoc_h, keep_prob=dropout, is_training=Kb.learning_phase(),
+                                          scope='dropout_phoc4')
 
                     phoc_h = slim.conv2d(phoc_h, 1024, [1, 3], stride=[1, 1], padding='VALID', scope='conv6a_phoc')
 
                     net = tf.concat([phoc_w, phoc_h], axis=-1)
                     net = slim.conv2d(net, 1024, [1, 1], stride=1, scope='fc7')
+
         return net
 
     def phocs(self, v_phoc):
         reuse = self.get_reuse(self._phoc_calls)
         self._phoc_calls += 1
-        return phoc_prediction(v_phoc, phoc_dim=self.args.phoc_dim, L2_reg=self.args.box_filter_L2_reg, scope=self.scope,
+        return phoc_prediction(v_phoc, phoc_dim=self.args.phoc_dim, L2_reg=self.args.box_filter_L2_reg,
+                               scope=self.scope,
                                dropout=self.args.dropout, reuse=reuse)
 
 
@@ -163,18 +191,35 @@ class MyOldPHOC(PhocEmbedding):
                     boxes_input = tf.identity(b[:, 1:], name='boxes')
                     batch_idx = tf.cast(b[:, 0], dtype=tf.int32, name='batch_idx')
                     pooled_features = tf.image.crop_and_resize(x, boxes_input, batch_idx, crop_size=self.output_shape)
-                    net = slim.conv2d(pooled_features, 1024, self.output_shape, stride=[1, 1], padding='VALID', scope='conv1_phoc')
+                    net = slim.conv2d(pooled_features, 1024, self.output_shape, stride=[1, 1], padding='VALID',
+                                      scope='conv1_phoc')
                     net = slim.conv2d(net, 1024, [1, 1], stride=[1, 1], padding='VALID', scope='conv2_phoc')
                     # TODO: remove the flags
                     if not self.args.tiny_phoc:
-                        net = slim.dropout(net, keep_prob=1 - dropout, is_training=Kb.learning_phase(), scope='dropout_phoc1')
+                        net = slim.dropout(net, keep_prob=1 - dropout, is_training=Kb.learning_phase(),
+                                           scope='dropout_phoc1')
                         net = slim.conv2d(net, 1024, [1, 1], stride=[1, 1], padding='VALID', scope='conv3_phoc')
                     if not self.args.tiny_phoc and not self.args.bigger_phoc:
-                        net = slim.dropout(net, keep_prob=1 - dropout, is_training=Kb.learning_phase(), scope='dropout_phoc2')
+                        net = slim.dropout(net, keep_prob=1 - dropout, is_training=Kb.learning_phase(),
+                                           scope='dropout_phoc2')
                         net = slim.conv2d(net, 1024, [1, 1], stride=[1, 1], padding='VALID', scope='conv4_phoc')
-                    net = slim.dropout(net, keep_prob=1 - dropout, is_training=Kb.learning_phase(), scope='dropout_phoc3')
+                    net = slim.dropout(net, keep_prob=1 - dropout, is_training=Kb.learning_phase(),
+                                       scope='dropout_phoc3')
+
                     net = slim.conv2d(net, 1024, [1, 1], stride=1, scope='phoc_feature')
+        print(net.shape)
+
         return net
+
+    # def phocs(self, v_phoc):
+    #     reuse = self.get_reuse(self._phoc_calls)
+    #     self._phoc_calls += 1
+    #     # print(self.args.phoc_dim) # +1 Adaptation to old code
+    #     pred_ = phoc_prediction(v_phoc, phoc_dim=self.args.phoc_dim, L2_reg=self.args.box_filter_L2_reg,
+    #                             scope=self.scope,
+    #                             dropout=self.args.dropout, reuse=reuse)
+    #
+    #     return pred_
 
     def phocs(self, v_phoc, act_func=tf.nn.relu, ):
         reuse = self.get_reuse(self._phoc_calls)
@@ -187,8 +232,11 @@ class MyOldPHOC(PhocEmbedding):
                 # Collect outputs for conv2d, fully_connected and max_pool2d.
                 with slim.arg_scope([slim.conv2d, slim.fully_connected, slim.max_pool2d],
                                     outputs_collections=end_points_collection):
-                    phoc = slim.conv2d(v_phoc, phoc_dim, [1, 1], stride=1, activation_fn=None, padding='VALID', scope='linear')
-                    phoc = tf.squeeze(phoc, name='phoc_embd')
+                    phoc = slim.conv2d(v_phoc, phoc_dim, [1, 1], stride=1, activation_fn=None, padding='VALID',
+                                       scope='linear')
+                    print(phoc.shape)
+                    phoc = tf.compat.v1.squeeze(phoc, name='phoc_embd')
+
         return phoc
 
     def aux_iou(self, features):
@@ -196,4 +244,5 @@ class MyOldPHOC(PhocEmbedding):
         self._iou_calls += 1
         iou_pred = iou_prediction(features, num_classes=self.args.box_filter_num_clsses, scope=self.scope,
                                   L2_reg=self.args.box_filter_L2_reg, reuse=reuse)
+
         return iou_pred

@@ -49,7 +49,7 @@ class Options(object):
         p.add_argument('--reset-gs', action='store_true', help="reset global_step")
         p.add_argument('--partial-image-prob', default=0.0, type=float, help='')
         p.add_argument('--num-of-classes-to-sum', default=3, type=int, help='When filtering boxes, how many classes to sum to get class score')
-        p.add_argument('--phoc-dim', default=540, type=int, help='Size of PHOC vector')
+        p.add_argument('--phoc-dim', default=-1, type=int, help='Size of PHOC vector')
         p.add_argument('--phoc-loss-weight', default=150, type=float, help='Weighting of PHOC loss in Heatmap Training total loss')
         p.add_argument('--regression-target-scaling-factor',  default=1500, type=float,
                        help='Scale for regression output. Defaults to 1500 to allow sensitivity ~single pixel (large side is 1200 by default)')
@@ -92,6 +92,7 @@ class BoxSegmentWithPHOCOptions(Options):
         p.add_argument('--aux-iou', action='store_true', help='use IoU loss as a regularizer for PHOC')
         p.add_argument('--crop-words', action='store_true', help='Continue train = load vars in checkpoint')
         p.add_argument('--gray-augment', action='store_true', help='Dialation augment + gray scale image')
+        # change to new one ...
         p.add_argument('--embed-model', default='MyOldPHOC', help='Embedding model class to use')
         p.add_argument('--load-vars', type=str, default=None, help='Load specific vars manually')
         p.add_argument('--lr-hmap', type=float, default=0.0001, help='Learning rate for hmap train (hmap + phocs + [reconstruction in pretrain])')
